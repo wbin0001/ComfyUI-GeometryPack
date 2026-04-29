@@ -7,83 +7,55 @@ Runs in an isolation env (pixi/conda) to avoid DLL conflicts with ComfyUI's torc
 """
 
 import logging
-logging.getLogger("geometrypack").setLevel(logging.INFO)
+import importlib
+log = logging.getLogger("geometrypack")
+log.setLevel(logging.INFO)
 
-from . import io
-from . import primitives
-from . import analysis
-from . import distance
-from . import conversion
-from . import transforms
-from . import visualization
-from . import skeleton
-from . import combine
-from . import uv
-from . import repair
-from . import remeshing
-from . import reconstruction
-from . import texture_remeshing
-from . import smoothing
-from . import decimation
+NODE_CLASS_MAPPINGS = {}
+NODE_DISPLAY_NAME_MAPPINGS = {}
+
+
+def _safe_import(module_name):
+    """Import a submodule and merge its node mappings. Skip on ImportError."""
+    try:
+        mod = importlib.import_module(f'.{module_name}', package=__name__)
+        NODE_CLASS_MAPPINGS.update(getattr(mod, 'NODE_CLASS_MAPPINGS', {}))
+        NODE_DISPLAY_NAME_MAPPINGS.update(getattr(mod, 'NODE_DISPLAY_NAME_MAPPINGS', {}))
+        return True
+    except ImportError as e:
+        log.warning("Skipping %s (missing dependency): %s", module_name, e)
+        return False
+    except Exception as e:
+        log.warning("Skipping %s (import error): %s", module_name, e)
+        return False
+
+
+# Core nodes (pip-installable dependencies)
+_safe_import('io')
+_safe_import('primitives')
+_safe_import('analysis')
+_safe_import('distance')
+_safe_import('conversion')
+_safe_import('transforms')
+_safe_import('visualization')
+_safe_import('skeleton')
+_safe_import('combine')
+_safe_import('uv')
+_safe_import('repair')
+_safe_import('remeshing')
+_safe_import('reconstruction')
+_safe_import('texture_remeshing')
+_safe_import('smoothing')
+_safe_import('decimation')
 
 # ParaView/VTK filter nodes
-from . import paraview
+_safe_import('paraview')
 
-# CGAL nodes (moved from nodes/cgal/)
-from . import reconstruction_cgal
-from . import boolean
-from . import remeshing_cgal
-from . import repair_cgal
-from . import decimation_cgal
-
-# Collect all node class mappings
-NODE_CLASS_MAPPINGS = {}
-NODE_CLASS_MAPPINGS.update(io.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(primitives.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(analysis.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(distance.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(conversion.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(transforms.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(visualization.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(skeleton.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(combine.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(uv.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(repair.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(remeshing.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(reconstruction.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(texture_remeshing.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(paraview.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(reconstruction_cgal.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(boolean.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(remeshing_cgal.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(repair_cgal.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(smoothing.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(decimation.NODE_CLASS_MAPPINGS)
-NODE_CLASS_MAPPINGS.update(decimation_cgal.NODE_CLASS_MAPPINGS)
-
-# Collect all display name mappings
-NODE_DISPLAY_NAME_MAPPINGS = {}
-NODE_DISPLAY_NAME_MAPPINGS.update(io.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(primitives.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(analysis.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(distance.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(conversion.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(transforms.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(visualization.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(skeleton.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(combine.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(uv.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(repair.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(remeshing.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(reconstruction.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(texture_remeshing.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(paraview.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(reconstruction_cgal.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(boolean.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(remeshing_cgal.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(repair_cgal.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(smoothing.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(decimation.NODE_DISPLAY_NAME_MAPPINGS)
-NODE_DISPLAY_NAME_MAPPINGS.update(decimation_cgal.NODE_DISPLAY_NAME_MAPPINGS)
+# CGAL/igl nodes (require conda packages, skip if unavailable)
+_safe_import('reconstruction_cgal')
+_safe_import('boolean')
+_safe_import('remeshing_cgal')
+_safe_import('repair_cgal')
+_safe_import('decimation_cgal')
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
